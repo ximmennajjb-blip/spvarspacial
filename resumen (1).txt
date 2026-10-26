@@ -1,0 +1,80 @@
+TALLER 4 - SpVAR COLOMBIA
+Resumen del script app.py (version Streamlit)
+=========================================================
+
+OBJETIVO
+--------
+Analizar la relacion espacial entre el PIB y los homicidios en los
+departamentos de Colombia, eligiendo automaticamente el modelo de
+econometria espacial mas adecuado, y presentar los resultados en una
+aplicacion web interactiva (Streamlit).
+
+
+PASOS DEL SCRIPT
+----------------
+1. Descarga la geometria de los departamentos (GeoJSON) y la proyecta
+   a EPSG:4326 y EPSG:3116.
+2. Descarga el PIB departamental (DANE) y los homicidios
+   (datos.gov.co); construye el panel departamento-ano.
+3. Crea matrices de pesos espaciales (Queen, Rook, KNN 4/5/6) y elige
+   la de mayor |Moran's I| de los residuos OLS.
+4. Prepara los datos del ultimo ano con rezagos (SpVAR).
+5. Estima OLS, SAR, SEM, SAC y SDM y elige el mejor modelo.
+6. Ajusta el modelo final para PIB y para homicidios.
+7. Calcula LISA (Moran local) y Gi* (Getis-Ord).
+8. Muestra todo en Streamlit: mapas, modelos y datos.
+
+
+FUENTES DE DATOS
+----------------
+- Geometria: GitHub (caticoa3/colombia_mapa; respaldo santiblanko)
+- PIB: DANE, archivo anex-PIBDep-TotalDep-2025pr.xlsx, hoja Cuadro 1
+- Homicidios: datos.gov.co, recurso m8fd-ahd9
+
+
+VARIABLES
+---------
+Dependientes: log_PIB, tasa_homicidios
+Explicativas: log_PIB_lag, hom_lag, luces_viirs, log_poblacion,
+              urbanizacion
+
+
+ATENCION - VARIABLES APROXIMADAS / SIMULADAS
+--------------------------------------------
+- poblacion_approx = exp(log_PIB) * 120  (no es poblacion real)
+- luces_viirs: simulada a partir de log_PIB + ruido aleatorio
+- urbanizacion: simulada a partir de log_PIB + ruido aleatorio
+- densidad: usa un area fija para todos los departamentos
+Los resultados deben interpretarse con cautela hasta reemplazar estas
+variables por datos oficiales.
+
+
+REGLA DE SELECCION DE MODELO (alfa = 0.05)
+------------------------------------------
+- RLM-Lag significativo y RLM-Error no        -> SAR
+- RLM-Error significativo y RLM-Lag no        -> SEM
+- Ambos significativos                        -> menor AIC (SAR/SEM/SAC/SDM)
+- Ninguno significativo                       -> OLS
+- SDM mejora el AIC en mas de 2 puntos        -> SDM
+
+
+EJECUCION
+---------
+Local:
+  pip install -r requirements.txt
+  streamlit run app.py
+
+Streamlit Community Cloud:
+  - Subir app.py y requirements.txt a GitHub
+  - Archivo principal: app.py
+  - Advanced settings -> Python 3.11 o 3.12
+
+Requiere conexion a internet para descargar los datos.
+
+
+LIMITACIONES
+------------
+- Un solo corte transversal con un rezago (no un panel completo).
+- Dependencia de URLs externas que pueden cambiar.
+- La eleccion de W por mayor Moran's I es una heuristica.
+- Varias variables explicativas son simuladas o aproximadas.
