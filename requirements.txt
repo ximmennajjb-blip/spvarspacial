@@ -1,0 +1,11 @@
+streamlit
+numpy
+pandas
+geopandas
+matplotlib
+plotly
+requests
+openpyxl
+libpysal
+esda
+spreg
