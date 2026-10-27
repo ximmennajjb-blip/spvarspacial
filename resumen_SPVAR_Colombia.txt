@@ -1,0 +1,125 @@
+======================================================================
+SPVAR IPM - HOMICIDIOS | COLOMBIA DEPARTAMENTAL
+Resumen del script app.py (exportado de Google Colab)
+======================================================================
+
+OBJETIVO
+--------
+Analizar la relacion espacial y temporal entre la pobreza
+multidimensional (IPM) y la tasa de homicidios en los 33 departamentos
+de Colombia (2018-2025), mediante analisis exploratorio espacial (ESDA),
+modelos de econometria espacial y una interfaz web interactiva (Gradio).
+
+
+FUENTES DE DATOS
+----------------
+- IPM: DANE, archivo anex-PMultidimensional-Departamental-2025.xlsx,
+  hoja IPM_Departamentos, columna "Total" de cada anio.
+- Homicidios: MinDefensa, datos.gov.co, dataset m8fd-ahd9 (API SODA).
+- Poblacion: proyecciones DANE basadas en el CNPV 2018 (tabla incluida
+  en el codigo, variable POB_DANE).
+- Geometria: GeoJSON departamental desde GitHub (caticoa3/colombia_mapa,
+  con santiblanko/colombia.geojson como respaldo).
+
+
+REQUISITOS
+----------
+Python 3.9 o superior. Librerias (se instalan automaticamente si faltan):
+geopandas, libpysal, esda, spreg, folium, mapclassify, openpyxl, xlrd,
+requests, tqdm, plotly, kaleido, gradio, splot. Tambien numpy, pandas y
+matplotlib. Se requiere conexion a internet.
+
+
+COMO EJECUTAR
+-------------
+En Colab:   !python app.py
+En local:   python app.py
+Nota: las rutas estan fijadas en /content/spvar_col (Colab). Para uso
+local, modificar la variable BASE.
+Al terminar se lanza Gradio con share=True (enlace publico temporal).
+
+
+FASES DEL SCRIPT
+----------------
+Fase 0  - Instalacion de dependencias.
+Fase 1  - Configuracion: imports, carpetas y codigos DIVIPOLA (33).
+Fase 2  - Geometria: descarga y filtrado del GeoJSON departamental.
+Fase 3  - Homicidios: descarga por anio y agregacion por departamento.
+Fase 4  - IPM: lectura del Excel del DANE (cada anio ocupa 3 columnas:
+          Total, Cabeceras, Centros poblados; se usa Total). Verifica
+          que el IPM de 2023 y 2024 no sea identico.
+Fase 5  - Poblacion: carga de la tabla de proyecciones DANE.
+Fase 6  - Panel: une homicidios, IPM y poblacion; calcula la tasa de
+          homicidio por 100 mil habitantes; audita duplicados, NaN y
+          alineacion con la geometria.
+Fase 7  - Matriz de vecindad Queen (estandarizada por filas), Moran's I
+          global por anio y variable, y LISA del ultimo anio
+          (HH, LL, HL, LH).
+Fase 8  - Modelos con rezagos temporales (ipm_l1, hom_l1): OLS, SAR,
+          SEM, SAC y SDM para dos ecuaciones (IPM y tasa de homicidio).
+          Se elige el modelo de menor AIC.
+Fase 9  - Funcion generar_mapa(): mapa estatico (Matplotlib) o 3D
+          (Plotly scatter_3d).
+Fase 10 - Interfaz Gradio.
+Fase 11 - Resumen de auditoria impreso en consola.
+
+
+MODELOS ESPACIALES
+------------------
+OLS : minimos cuadrados con diagnosticos espaciales.
+SAR : rezago espacial de la variable dependiente (ML_Lag).
+SEM : error espacial (ML_Error).
+SAC : rezago y error espacial combinados (GM_Combo_Hom).
+SDM : Durbin espacial; rezago de y mas rezago espacial de X (WX).
+
+La estimacion usa un corte transversal del ultimo anio con rezago
+disponible.
+
+
+INTERFAZ GRADIO
+---------------
+Controles:
+  - Anio (2018-2025 segun disponibilidad)
+  - Variable: IPM, Tasa Homicidio o Bivariado (60% IPM normalizado +
+    40% homicidios normalizados)
+  - Tipo de mapa: Estatico (Matplotlib) o 3D Dinamico (Plotly)
+  - Departamento: Todos o uno especifico (se resalta en el mapa estatico)
+Salidas: imagen del mapa, grafico 3D, mensaje de estado y ficha del
+departamento (IPM y tasa de homicidio).
+
+
+AUDITORIAS INCLUIDAS
+--------------------
+- 33 codigos DIVIPOLA verificados.
+- IPM 2023, 2024 y 2025 distintos entre si.
+- Sin NaN ni duplicados en el panel.
+- Codigos del panel alineados con la geometria.
+- Tamano de y igual al tamano de la matriz W.
+- Modelo SDM incluido en la comparacion.
+
+
+LIMITACIONES Y OBSERVACIONES
+----------------------------
+1. La tabla de poblacion (POB_DANE) esta escrita a mano y muchos valores
+   estan redondeados; las tasas son aproximadas. Aunque el texto del
+   script menciona un intento de descarga automatica, solo se usa la
+   tabla de respaldo. Conviene reemplazarla por las proyecciones
+   oficiales del DANE.
+2. El lector del Excel depende de posiciones fijas (filas 14-49,
+   columnas 2 + 3*i); un cambio de formato del DANE lo romperia.
+3. La geometria proviene de repositorios de terceros, no oficiales.
+4. La estimacion es de un solo corte transversal (n cercano a 33), lo
+   que limita la potencia estadistica; no es un VAR espacial de panel
+   completo pese al nombre.
+5. Los centroides del mapa 3D se calculan en coordenadas geograficas
+   (EPSG:4326); lo ideal es proyectar antes.
+6. Rutas fijas de Colab y share=True en Gradio.
+
+
+ARCHIVOS GENERADOS
+------------------
+/content/spvar_col/data/anex-PMultidimensional-Departamental-2025.xlsx
+/content/spvar_col/output/  (carpeta de salida)
+Mapas estaticos: PNG temporales.
+
+======================================================================
